@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <title>Gestión Reactiva</title>
+
+    <style>
+
+        body{
+            font-family: Arial;
+            margin: 30px;
+            background: #f4f4f4;
+        }
+
+        .container{
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        table{
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td{
+            border: 1px solid #ccc;
+            padding: 10px;
+            text-align: center;
+        }
+
+        input{
+            margin: 5px;
+            padding: 8px;
+        }
+
+        button{
+            padding: 8px 15px;
+            margin: 3px;
+            cursor: pointer;
+        }
+
+        .btn-eliminar{
+            background: #d9534f;
+            color: white;
+            border: none;
+        }
+
+        .btn-editar{
+            background: #0275d8;
+            color: white;
+            border: none;
+        }
+
+        .btn-notas{
+            background: #5cb85c;
+            color: white;
+            border: none;
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>Sistema Reactivo de Estudiantes</h1>
+
+    <form id="formEstudiante">
+
+        <input type="text"
+               id="nombre"
+               placeholder="Nombre"
+               required>
+
+        <input type="text"
+               id="apellido"
+               placeholder="Apellido"
+               required>
+
+        <input type="email"
+               id="correo"
+               placeholder="Correo"
+               required>
+
+        <button type="submit">
+            Guardar
+        </button>
+
+    </form>
+
+    <table>
+
+        <thead>
+
+        <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Apellido</th>
+            <th>Correo</th>
+            <th>Acciones</th>
+        </tr>
+
+        </thead>
+
+        <tbody id="tablaEstudiantes">
+
+        </tbody>
+
+    </table>
+
+</div>
+
+<script src="js/estudiante.js"></script>
+
+</body>
+
+</html>
