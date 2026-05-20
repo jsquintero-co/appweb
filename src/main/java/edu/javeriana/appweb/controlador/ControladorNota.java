@@ -2,6 +2,7 @@ package edu.javeriana.appweb.controlador;
 
 import edu.javeriana.appweb.dto.NotaDTO;
 import edu.javeriana.appweb.servicio.ServicioNota;
+
 import jakarta.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,47 +20,61 @@ public class ControladorNota {
     private ServicioNota servicio;
 
     @GetMapping
-    public Flux<NotaDTO> getAll() {
+    public Flux<NotaDTO> listar(){
 
         return servicio.findAll();
     }
 
     @GetMapping("/{id}")
-    public Mono<NotaDTO> getById(@PathVariable Long id) {
+    public Mono<NotaDTO> buscarPorId(
+            @PathVariable Long id){
 
         return servicio.findById(id);
     }
 
-    @GetMapping("/estudiante/{id}")
-    public Flux<NotaDTO> getByEstudiante(@PathVariable Long id) {
+    @GetMapping("/estudiante/{estudianteId}")
+    public Flux<NotaDTO> listarPorEstudiante(
+            @PathVariable Long estudianteId){
 
-        return servicio.findByEstudianteId(id);
+        return servicio.findByEstudianteId(estudianteId);
     }
 
     @PostMapping
-    public Mono<NotaDTO> create(@Valid @RequestBody NotaDTO dto) {
+    public Mono<NotaDTO> guardar(
+            @Valid @RequestBody NotaDTO dto){
 
         return servicio.save(dto);
     }
 
     @PutMapping("/{id}")
-    public Mono<NotaDTO> update(
+    public Mono<NotaDTO> actualizar(
+
             @PathVariable Long id,
-            @Valid @RequestBody NotaDTO dto) {
+
+            @Valid @RequestBody NotaDTO dto
+    ){
 
         return servicio.update(id, dto);
     }
 
     @DeleteMapping("/{id}")
-    public Mono<Void> delete(@PathVariable Long id) {
+    public Mono<Void> eliminar(
+            @PathVariable Long id){
 
         return servicio.deleteById(id);
     }
 
-    @GetMapping("/estudiante/{id}/nota-final")
+    @GetMapping("/final/{estudianteId}/{materiaId}")
     public Mono<Double> calcularNotaFinal(
-        @PathVariable Long id){
 
-        return servicio.calcularNotaFinal(id);
+            @PathVariable Long estudianteId,
+
+            @PathVariable Long materiaId
+    ){
+
+        return servicio.calcularNotaFinal(
+                estudianteId,
+                materiaId
+        );
     }
 }

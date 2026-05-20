@@ -6,6 +6,7 @@ import edu.javeriana.appweb.repositorio.RepositorioEstudiante;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -16,20 +17,17 @@ public class ServicioEstudianteImpl
 
     @Autowired
     private RepositorioEstudiante repositorio;
-    
+
     @Autowired
-        private ServicioNota servicioNota;
+    private ServicioNota servicioNota;
 
-    @Override
-        public Mono<Double> calcularNotaFinal(Long estudianteId){
-
-         return servicioNota
-               .calcularNotaFinal(estudianteId);
-        }
     @Override
     public Flux<EstudianteDTO> findAll() {
 
         return repositorio.findAll()
+
+                .limitRate(10)
+
                 .map(this::convertToDTO);
     }
 
@@ -37,16 +35,27 @@ public class ServicioEstudianteImpl
     public Mono<EstudianteDTO> findById(Long id) {
 
         return repositorio.findById(id)
+
+                .switchIfEmpty(
+                        Mono.error(
+                                new RuntimeException(
+                                        "Estudiante no encontrado"
+                                )
+                        )
+                )
+
                 .map(this::convertToDTO);
     }
 
     @Override
+    @Transactional
     public Mono<EstudianteDTO> save(EstudianteDTO dto) {
 
         return repositorio.findByCorreo(dto.getCorreo())
 
                 .flatMap(existente ->
-                        Mono.<EstudianteDTO>error(
+
+                        Mono.error(
                                 new RuntimeException(
                                         "El correo ya existe"
                                 )
@@ -56,14 +65,21 @@ public class ServicioEstudianteImpl
                 .switchIfEmpty(
 
                         repositorio.save(
-                                        convertToEntity(dto)
-                                )
-                                .map(this::convertToDTO)
-                );
+                                convertToEntity(dto)
+                        )
+                )
+
+                .map(estudiante -> (Estudiante) estudiante)
+
+                .map(this::convertToDTO);
     }
 
     @Override
-    public Mono<EstudianteDTO> update(Long id, EstudianteDTO dto) {
+    @Transactional
+    public Mono<EstudianteDTO> update(
+            Long id,
+            EstudianteDTO dto
+    ) {
 
         return repositorio.findById(id)
 
@@ -78,7 +94,9 @@ public class ServicioEstudianteImpl
                 .flatMap(estudiante -> {
 
                     estudiante.setNombre(dto.getNombre());
+
                     estudiante.setApellido(dto.getApellido());
+
                     estudiante.setCorreo(dto.getCorreo());
 
                     return repositorio.save(estudiante);
@@ -88,32 +106,55 @@ public class ServicioEstudianteImpl
     }
 
     @Override
+    @Transactional
     public Mono<Void> deleteById(Long id) {
 
         return repositorio.deleteById(id);
     }
 
-    private EstudianteDTO convertToDTO(Estudiante e) {
+    @Override
+    public Mono<Double> calcularNotaFinal(
+            Long estudianteId,
+            Long materiaId
+    ) {
+
+        return servicioNota.calcularNotaFinal(
+                estudianteId,
+                materiaId
+        );
+    }
+
+    private EstudianteDTO convertToDTO(
+            Estudiante estudiante
+    ) {
 
         EstudianteDTO dto = new EstudianteDTO();
 
-        dto.setId(e.getId());
-        dto.setNombre(e.getNombre());
-        dto.setApellido(e.getApellido());
-        dto.setCorreo(e.getCorreo());
+        dto.setId(estudiante.getId());
+
+        dto.setNombre(estudiante.getNombre());
+
+        dto.setApellido(estudiante.getApellido());
+
+        dto.setCorreo(estudiante.getCorreo());
 
         return dto;
     }
 
-    private Estudiante convertToEntity(EstudianteDTO dto) {
+    private Estudiante convertToEntity(
+            EstudianteDTO dto
+    ) {
 
-        Estudiante e = new Estudiante();
+        Estudiante estudiante = new Estudiante();
 
-        e.setId(dto.getId());
-        e.setNombre(dto.getNombre());
-        e.setApellido(dto.getApellido());
-        e.setCorreo(dto.getCorreo());
+        estudiante.setId(dto.getId());
 
-        return e;
+        estudiante.setNombre(dto.getNombre());
+
+        estudiante.setApellido(dto.getApellido());
+
+        estudiante.setCorreo(dto.getCorreo());
+
+        return estudiante;
     }
 }

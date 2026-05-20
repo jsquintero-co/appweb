@@ -19,5 +19,8 @@ public interface ServicioNota {
 
     Mono<Void> deleteById(Long id);
 
-    Mono<Double> calcularNotaFinal(Long estudianteId);
+  Mono<Double> calcularNotaFinal(
+        Long estudianteId,
+        Long materiaId
+    );
 }

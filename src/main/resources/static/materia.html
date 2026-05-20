@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <title>Gestión de Materias</title>
+
+    <style>
+
+        body{
+            font-family: Arial;
+            margin: 30px;
+        }
+
+        table{
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td{
+            border: 1px solid #ccc;
+            padding: 10px;
+            text-align: center;
+        }
+
+        input{
+            margin: 5px;
+            padding: 8px;
+        }
+
+        button{
+            padding: 8px 15px;
+            margin: 3px;
+        }
+
+        .btn-eliminar{
+            background: crimson;
+            color: white;
+            border: none;
+        }
+
+        .btn-editar{
+            background: orange;
+            color: white;
+            border: none;
+        }
+
+        .btn-ver{
+            background: steelblue;
+            color: white;
+            border: none;
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<h1>Gestión de Materias</h1>
+
+<button onclick="volver()">
+    Volver
+</button>
+
+<form id="formMateria">
+
+    <input
+            type="text"
+            id="nombre"
+            placeholder="Nombre de materia"
+            required>
+
+    <input
+            type="number"
+            id="creditos"
+            placeholder="Créditos"
+            required>
+
+    <button type="submit">
+        Guardar
+    </button>
+
+</form>
+
+<table>
+
+    <thead>
+
+    <tr>
+
+        <th>ID</th>
+        <th>Nombre</th>
+        <th>Créditos</th>
+        <th>Acciones</th>
+
+    </tr>
+
+    </thead>
+
+    <tbody id="tablaMaterias">
+
+    </tbody>
+
+</table>
+
+<h2>Estudiantes de la Materia</h2>
+
+<ul id="listaEstudiantes">
+
+</ul>
+
+<script src="js/materia.js"></script>
+
+</body>
+
+</html>

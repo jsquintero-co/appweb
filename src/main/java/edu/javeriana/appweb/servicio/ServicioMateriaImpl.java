@@ -2,10 +2,13 @@ package edu.javeriana.appweb.servicio;
 
 import edu.javeriana.appweb.dto.MateriaDTO;
 import edu.javeriana.appweb.modelo.Materia;
+import edu.javeriana.appweb.modelo.Nota;
 import edu.javeriana.appweb.repositorio.RepositorioMateria;
+import edu.javeriana.appweb.repositorio.RepositorioNota;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -17,10 +20,16 @@ public class ServicioMateriaImpl
     @Autowired
     private RepositorioMateria repositorioMateria;
 
+    @Autowired
+    private RepositorioNota repositorioNota;
+
     @Override
     public Flux<MateriaDTO> findAll() {
 
         return repositorioMateria.findAll()
+
+                .limitRate(10)
+
                 .map(this::convertToDTO);
     }
 
@@ -28,20 +37,49 @@ public class ServicioMateriaImpl
     public Mono<MateriaDTO> findById(Long id) {
 
         return repositorioMateria.findById(id)
+
+                .switchIfEmpty(
+                        Mono.error(
+                                new RuntimeException(
+                                        "Materia no encontrada"
+                                )
+                        )
+                )
+
                 .map(this::convertToDTO);
     }
 
     @Override
+    @Transactional
     public Mono<MateriaDTO> save(MateriaDTO dto) {
 
-        Materia materia = convertToEntity(dto);
-
         return repositorioMateria
-                .save(materia)
+
+                .findByNombre(dto.getNombre())
+
+                .flatMap(materiaExistente ->
+
+                        Mono.error(
+                                new RuntimeException(
+                                        "La materia ya existe"
+                                )
+                        )
+                )
+
+                .switchIfEmpty(
+
+                        repositorioMateria.save(
+                                convertToEntity(dto)
+                        )
+                )
+
+                .map(materia -> (Materia) materia)
+
                 .map(this::convertToDTO);
     }
 
     @Override
+    @Transactional
     public Mono<MateriaDTO> update(Long id, MateriaDTO dto) {
 
         return repositorioMateria.findById(id)
@@ -57,6 +95,7 @@ public class ServicioMateriaImpl
                 .flatMap(materia -> {
 
                     materia.setNombre(dto.getNombre());
+
                     materia.setCreditos(dto.getCreditos());
 
                     return repositorioMateria.save(materia);
@@ -66,9 +105,24 @@ public class ServicioMateriaImpl
     }
 
     @Override
+    @Transactional
     public Mono<Void> deleteById(Long id) {
 
         return repositorioMateria.deleteById(id);
+    }
+
+    @Override
+    public Flux<Long> obtenerIdsEstudiantesPorMateria(
+            Long materiaId
+    ) {
+
+        return repositorioNota
+
+                .findByMateriaId(materiaId)
+
+                .map(Nota::getEstudianteId)
+
+                .distinct();
     }
 
     private MateriaDTO convertToDTO(Materia materia) {
@@ -76,7 +130,9 @@ public class ServicioMateriaImpl
         MateriaDTO dto = new MateriaDTO();
 
         dto.setId(materia.getId());
+
         dto.setNombre(materia.getNombre());
+
         dto.setCreditos(materia.getCreditos());
 
         return dto;
@@ -87,7 +143,9 @@ public class ServicioMateriaImpl
         Materia materia = new Materia();
 
         materia.setId(dto.getId());
+
         materia.setNombre(dto.getNombre());
+
         materia.setCreditos(dto.getCreditos());
 
         return materia;

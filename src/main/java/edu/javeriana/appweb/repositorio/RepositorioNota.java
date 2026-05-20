@@ -10,4 +10,8 @@ public interface RepositorioNota
     Flux<Nota> findByEstudianteId(Long estudianteId);
 
     Flux<Nota> findByMateriaId(Long materiaId);
+    Flux<Nota> findByEstudianteIdAndMateriaId(
+        Long estudianteId,
+        Long materiaId
+);
 }

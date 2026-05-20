@@ -1,5 +1,6 @@
 package edu.javeriana.appweb.controlador;
 
+import edu.javeriana.appweb.dto.EstudianteDTO;
 import edu.javeriana.appweb.dto.MateriaDTO;
 import edu.javeriana.appweb.servicio.ServicioMateria;
 
@@ -54,5 +55,12 @@ public class ControladorMateria {
             @PathVariable Long id) {
 
         return servicio.deleteById(id);
+    }
+
+    @GetMapping("/{id}/estudiantes")
+    public Flux<Long> obtenerEstudiantesPorMateria(
+        @PathVariable Long id){
+
+    return servicio.obtenerIdsEstudiantesPorMateria(id);
     }
 }

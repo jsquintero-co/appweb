@@ -1,19 +1,20 @@
 package edu.javeriana.appweb.servicio;
 
 import edu.javeriana.appweb.dto.NotaDTO;
-import edu.javeriana.appweb.modelo.Materia;
 import edu.javeriana.appweb.modelo.Nota;
 import edu.javeriana.appweb.repositorio.RepositorioMateria;
 import edu.javeriana.appweb.repositorio.RepositorioNota;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Service
-public class ServicioNotaImpl implements ServicioNota {
+public class ServicioNotaImpl
+        implements ServicioNota {
 
     @Autowired
     private RepositorioNota repositorioNota;
@@ -25,6 +26,9 @@ public class ServicioNotaImpl implements ServicioNota {
     public Flux<NotaDTO> findAll() {
 
         return repositorioNota.findAll()
+
+                .limitRate(10)
+
                 .flatMap(this::convertToDTO);
     }
 
@@ -32,47 +36,49 @@ public class ServicioNotaImpl implements ServicioNota {
     public Mono<NotaDTO> findById(Long id) {
 
         return repositorioNota.findById(id)
+
                 .flatMap(this::convertToDTO);
     }
 
     @Override
     public Flux<NotaDTO> findByEstudianteId(Long estudianteId) {
 
-        return repositorioNota.findByEstudianteId(estudianteId)
+        return repositorioNota
+
+                .findByEstudianteId(estudianteId)
+
+                .limitRate(10)
+
                 .flatMap(this::convertToDTO);
     }
 
     @Override
+    @Transactional
     public Mono<NotaDTO> save(NotaDTO dto) {
 
-        return repositorioMateria
+        return repositorioNota
 
-                .findByNombre(dto.getMateriaNombre())
-
-                .switchIfEmpty(
-
-                        repositorioMateria.save(
-                                new Materia(
-                                        null,
-                                        dto.getMateriaNombre(),
-                                        3
-                                )
-                        )
+                .findByEstudianteIdAndMateriaId(
+                        dto.getEstudianteId(),
+                        dto.getMateriaId()
                 )
 
-                .flatMap(materia -> {
+                .map(Nota::getPorcentaje)
 
-                    Nota nota = new Nota();
+                .reduce(0.0, Double::sum)
 
-                    nota.setValor(dto.getValor());
+                .flatMap(total -> {
 
-                    nota.setPorcentaje(dto.getPorcentaje());
+                    if(total + dto.getPorcentaje() > 100){
 
-                    nota.setObservacion(dto.getObservacion());
+                        return Mono.error(
+                                new RuntimeException(
+                                        "La suma de porcentajes supera el 100% para esta materia"
+                                )
+                        );
+                    }
 
-                    nota.setEstudianteId(dto.getEstudianteId());
-
-                    nota.setMateriaId(materia.getId());
+                    Nota nota = convertToEntity(dto);
 
                     return repositorioNota.save(nota);
                 })
@@ -81,6 +87,7 @@ public class ServicioNotaImpl implements ServicioNota {
     }
 
     @Override
+    @Transactional
     public Mono<NotaDTO> update(Long id, NotaDTO dto) {
 
         return repositorioNota.findById(id)
@@ -108,17 +115,24 @@ public class ServicioNotaImpl implements ServicioNota {
     }
 
     @Override
+    @Transactional
     public Mono<Void> deleteById(Long id) {
 
         return repositorioNota.deleteById(id);
     }
 
     @Override
-    public Mono<Double> calcularNotaFinal(Long estudianteId) {
+    public Mono<Double> calcularNotaFinal(
+            Long estudianteId,
+            Long materiaId
+    ) {
 
         return repositorioNota
 
-                .findByEstudianteId(estudianteId)
+                .findByEstudianteIdAndMateriaId(
+                        estudianteId,
+                        materiaId
+                )
 
                 .map(nota ->
                         (nota.getValor() * nota.getPorcentaje()) / 100.0
@@ -149,9 +163,30 @@ public class ServicioNotaImpl implements ServicioNota {
 
                     dto.setMateriaId(nota.getMateriaId());
 
-                    dto.setMateriaNombre(materia.getNombre());
+                    dto.setMateriaNombre(
+                            materia.getNombre()
+                    );
 
                     return dto;
                 });
+    }
+
+    private Nota convertToEntity(NotaDTO dto) {
+
+        Nota nota = new Nota();
+
+        nota.setId(dto.getId());
+
+        nota.setValor(dto.getValor());
+
+        nota.setPorcentaje(dto.getPorcentaje());
+
+        nota.setObservacion(dto.getObservacion());
+
+        nota.setEstudianteId(dto.getEstudianteId());
+
+        nota.setMateriaId(dto.getMateriaId());
+
+        return nota;
     }
 }

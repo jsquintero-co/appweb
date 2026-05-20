@@ -4,6 +4,9 @@ const API_ESTUDIANTES =
 const API_NOTAS =
     "http://localhost:8080/api/notas";
 
+const API_MATERIAS =
+    "http://localhost:8080/api/materias";
+
 const params =
     new URLSearchParams(window.location.search);
 
@@ -14,10 +17,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
     cargarEstudiante();
 
+    cargarMaterias();
+
     cargarNotas();
 
     document.getElementById("formNota")
         .addEventListener("submit", guardarNota);
+
+    document.getElementById("materia")
+        .addEventListener("change", cargarNotas);
 });
 
 async function cargarEstudiante(){
@@ -25,7 +33,9 @@ async function cargarEstudiante(){
     try{
 
         const response =
-            await fetch(`${API_ESTUDIANTES}/${estudianteId}`);
+            await fetch(
+                `${API_ESTUDIANTES}/${estudianteId}`
+            );
 
         const estudiante =
             await response.json();
@@ -42,22 +52,78 @@ async function cargarEstudiante(){
     }
 }
 
-async function cargarNotas(){
+async function cargarMaterias(){
 
     try{
 
         const response =
-            await fetch(`${API_NOTAS}/estudiante/${estudianteId}`);
+            await fetch(API_MATERIAS);
+
+        const materias =
+            await response.json();
+
+        const select =
+            document.getElementById("materia");
+
+        select.innerHTML = `
+            <option value="">
+                Seleccione una materia
+            </option>
+        `;
+
+        materias.forEach(materia => {
+
+            select.innerHTML += `
+                <option value="${materia.id}">
+                    ${materia.nombre}
+                </option>
+            `;
+        });
+
+    } catch(error){
+
+        console.error(error);
+
+        alert("Error cargando materias");
+    }
+}
+
+async function cargarNotas(){
+
+    try{
+
+        const materiaId =
+            document.getElementById("materia").value;
+
+        if(!materiaId){
+
+            document.getElementById("tablaNotas")
+                .innerHTML = "";
+
+            actualizarResumen([]);
+
+            return;
+        }
+
+        const response =
+            await fetch(
+                `${API_NOTAS}/estudiante/${estudianteId}`
+            );
 
         const notas =
             await response.json();
+
+        const notasFiltradas =
+            notas.filter(nota =>
+                nota.materiaId == materiaId
+            );
 
         const tabla =
             document.getElementById("tablaNotas");
 
         tabla.innerHTML = "";
 
-        notas.forEach(nota => {
+        notasFiltradas.forEach(nota => {
 
             tabla.innerHTML += `
                 <tr>
@@ -88,6 +154,8 @@ async function cargarNotas(){
             `;
         });
 
+        actualizarResumen(notasFiltradas);
+
     } catch(error){
 
         console.error(error);
@@ -100,24 +168,35 @@ async function guardarNota(event){
 
     event.preventDefault();
 
-const nota = {
+    const materiaId =
+        parseInt(
+            document.getElementById("materia").value
+        );
 
-    estudianteId: parseInt(estudianteId),
+    if(!materiaId){
 
-    materiaNombre:
-        document.getElementById("materia").value,
+        alert("Seleccione una materia");
 
-    valor: parseFloat(
-        document.getElementById("valor").value
-    ),
+        return;
+    }
 
-    porcentaje: parseFloat(
-        document.getElementById("porcentaje").value
-    ),
+    const nota = {
 
-    observacion:
-        document.getElementById("observacion").value
-};
+        estudianteId: parseInt(estudianteId),
+
+        materiaId: materiaId,
+
+        valor: parseFloat(
+            document.getElementById("valor").value
+        ),
+
+        porcentaje: parseFloat(
+            document.getElementById("porcentaje").value
+        ),
+
+        observacion:
+            document.getElementById("observacion").value
+    };
 
     try{
 
@@ -139,13 +218,20 @@ const nota = {
 
             document.getElementById("formNota").reset();
 
+            document.getElementById("materia").value =
+                materiaId;
+
             cargarNotas();
 
         } else {
 
-            const error = await response.json();
+            const error =
+                await response.json();
 
-            alert(error.mensaje || "Error guardando nota");
+            alert(
+                error.mensaje ||
+                "Error guardando nota"
+            );
         }
 
     } catch(error){
@@ -165,10 +251,12 @@ async function eliminarNota(id){
     try{
 
         const response =
-            await fetch(`${API_NOTAS}/${id}`, {
-
-                method: "DELETE"
-            });
+            await fetch(
+                `${API_NOTAS}/${id}`,
+                {
+                    method: "DELETE"
+                }
+            );
 
         if(response.ok){
 
@@ -193,16 +281,29 @@ async function calcularNotaFinal(){
 
     try{
 
-        const response =
-            await fetch(
-                `${API_ESTUDIANTES}/${estudianteId}/nota-final`
+        const materiaId =
+            parseInt(
+                document.getElementById("materia").value
             );
 
-        const data =
+        if(!materiaId){
+
+            alert("Seleccione una materia");
+
+            return;
+        }
+
+        const response =
+            await fetch(
+
+                `${API_NOTAS}/final/${estudianteId}/${materiaId}`
+            );
+
+        const notaFinal =
             await response.json();
 
         alert(
-            `Nota final: ${data.notaFinal}`
+            `Nota final: ${notaFinal.toFixed(2)}`
         );
 
     } catch(error){
@@ -213,7 +314,53 @@ async function calcularNotaFinal(){
     }
 }
 
+function actualizarResumen(notas){
+
+    let porcentaje = 0;
+
+    let acumulado = 0;
+
+    notas.forEach(nota => {
+
+        porcentaje += nota.porcentaje;
+
+        acumulado +=
+            (nota.valor * nota.porcentaje) / 100;
+    });
+
+    let estado = "Sin calcular";
+
+    if(porcentaje > 0){
+
+        estado =
+            acumulado >= 3
+                ? "Aprobado"
+                : "Reprobado";
+    }
+
+    document.getElementById("resumen").innerHTML = `
+
+        <h3>Resumen Académico</h3>
+
+        <p>
+            Porcentaje acumulado:
+            ${porcentaje}%
+        </p>
+
+        <p>
+            Nota acumulada:
+            ${acumulado.toFixed(2)}
+        </p>
+
+        <p>
+            Estado:
+            ${estado}
+        </p>
+    `;
+}
+
 function volver(){
 
-    window.location.href = "index.html";
+    window.location.href =
+        "index.html";
 }

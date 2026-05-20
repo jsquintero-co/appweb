@@ -57,20 +57,17 @@ public class ControladorEstudiante {
         return servicio.deleteById(id);
     }
 
-    @GetMapping("/{id}/nota-final")
-public Mono<Map<String, Double>> calcularNotaFinal(
-        @PathVariable Long id){
+@GetMapping("/{estudianteId}/nota-final/{materiaId}")
+public Mono<Double> calcularNotaFinal(
 
-    return servicio
-            .calcularNotaFinal(id)
-            .map(nota -> {
+        @PathVariable Long estudianteId,
 
-                Map<String, Double> response =
-                        new HashMap<>();
+        @PathVariable Long materiaId
+){
 
-                response.put("notaFinal", nota);
-
-                return response;
-            });
+    return servicio.calcularNotaFinal(
+            estudianteId,
+            materiaId
+    );
 }
 }

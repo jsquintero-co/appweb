@@ -1,5 +1,6 @@
 package edu.javeriana.appweb.servicio;
 
+import edu.javeriana.appweb.dto.EstudianteDTO;
 import edu.javeriana.appweb.dto.MateriaDTO;
 
 import reactor.core.publisher.Flux;
@@ -16,4 +17,7 @@ public interface ServicioMateria {
     Mono<MateriaDTO> update(Long id, MateriaDTO dto);
 
     Mono<Void> deleteById(Long id);
+
+    Flux<Long> obtenerIdsEstudiantesPorMateria(Long materiaId);
+
 }
